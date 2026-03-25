@@ -27,7 +27,7 @@ static void usage(int code)
 "\n"
 "Use vmnet interface without privileges\n"
 "\n"
-"    vmnet-helper (--fd FD|--socket SOCKET) [--interface-id UUID]\n"
+"    vmnet-helper (--fd FD|--socket SOCKET) [--parent-liveness-fd FD] [--interface-id UUID]\n"
 "                 [--operation-mode shared|bridged|host] [--shared-interface NAME]\n"
 "                 [--start-address ADDR] [--end-address ADDR] [--subnet-mask MASK]\n"
 "                 [--enable-tso] [--enable-checksum-offload] [--enable-isolation]\n"
@@ -58,6 +58,7 @@ enum {
     OPT_ENABLE_ISOLATION,
     OPT_LIST_SHARED_INTERFACES,
     OPT_NETWORK,
+    OPT_PARENT_LIVENESS_FD,
     OPT_VERSION,
 };
 
@@ -65,6 +66,7 @@ static const char *short_options = ":f:s:i:vh";
 
 static struct option long_options[] = {
     {"fd",                      required_argument,  0,  'f'},
+    {"parent-liveness-fd",      required_argument,  0,  OPT_PARENT_LIVENESS_FD},
     {"socket",                  required_argument,  0,  's'},
     {"interface-id",            required_argument,  0,  'i'},
     {"operation-mode",          required_argument,  0,  OPT_OPERATION_MODE},
@@ -199,6 +201,9 @@ void parse_options(struct options *opts, int argc, char **argv)
             break;
         case 'f':
             parse_fd(optarg, &opts->fd);
+            break;
+        case OPT_PARENT_LIVENESS_FD:
+            parse_fd(optarg, &opts->parent_liveness_fd);
             break;
         case 's':
             parse_socket(optarg, &opts->socket);

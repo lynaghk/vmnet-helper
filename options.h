@@ -9,6 +9,7 @@
 
 struct options {
     int fd;
+    int parent_liveness_fd;
     const char *socket;
     uint32_t operation_mode;
     uuid_t interface_id;

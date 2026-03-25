@@ -136,6 +136,7 @@ static void init_endpoint(struct endpoint *e, const char *name, size_t max_packe
 
 static struct options options = {
     .fd = -1,
+    .parent_liveness_fd = -1,
 };
 
 static struct endpoint host;
@@ -208,6 +209,18 @@ static void setup_kq(void)
     if (kevent(kq, changes, ARRAY_SIZE(changes), NULL, 0, NULL) != 0) {
         ERRORF("[main] kevent: %s", strerror(errno));
         exit(EXIT_FAILURE);
+    }
+
+    if (options.parent_liveness_fd != -1) {
+        struct kevent parent_change = {
+            .ident=options.parent_liveness_fd,
+            .filter=EVFILT_READ,
+            .flags=EV_ADD | EV_CLEAR,
+        };
+        if (kevent(kq, &parent_change, 1, NULL, 0, NULL) != 0) {
+            ERRORF("[main] kevent parent-liveness-fd: %s", strerror(errno));
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -1018,6 +1031,13 @@ static void wait_for_termination(void)
         if (n > 0) {
             if (events[0].filter == EVFILT_SIGNAL) {
                 INFOF("[main] received signal %s", strsignal(events[0].ident));
+                status |= STATUS_STOPPED;
+                break;
+            }
+            if (events[0].filter == EVFILT_READ &&
+                events[0].ident == (uintptr_t) options.parent_liveness_fd &&
+                (events[0].flags & EV_EOF) != 0) {
+                INFO("[main] parent-liveness-fd was closed");
                 status |= STATUS_STOPPED;
                 break;
             }
